@@ -1,0 +1,196 @@
+<div class="page-title-area">
+    <div class="d-table">
+        <div class="d-table-cell">
+            <div class="container">
+                <div class="title-item">
+                    <h2>Payment</h2>
+                    <ul>
+                        <li>
+                            <a href="/">Home</a>
+                        </li>
+                        <li>
+                            <i class='bx bx-chevrons-right'></i>
+                        </li>
+                        <li>
+                            <span>Payment Form</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="contact-area pb-100 pt-70" style="padding-top:60px;">
+   <div class="container">
+      <div class="section-title">
+         <h2>Packages Information</h2>
+      </div>
+      <div class="row">
+         <div class="col-md-6">
+            <h3 class="text-center">Packages : {{ package.package_category_name }}</h3>
+            <h5 class="text-center">Packages Name : <span class="text-uppercase">{{ package.name }}</span></h5>
+            <p class="text-center"><b>Packages Price: ${{ package.amount }}</b></p>
+         </div>
+         <div class="col-md-6">
+            <form id="js-payment-form" action="/makePayment" method="POST">
+               <div class="row">
+                  <div class="col-sm-6 col-lg-6">
+                     <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" name="first_name" class="form-control" required data-error="Please enter your first name">
+                        <div class="help-block with-errors"></div>
+                     </div>
+                  </div>
+                  <div class="col-sm-6 col-lg-6">
+                     <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" name="last_name" class="form-control" required data-error="Please enter your last name">
+                        <input type="hidden" name="plan_id" value="{{ package.stripePlanId }}">
+                        <input type="hidden" name="payment_method">
+                        <div class="help-block with-errors"></div>
+                     </div>
+                  </div>
+                  <div class="col-sm-6 col-lg-6">
+                     <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" class="form-control" required data-error="Please enter your email">
+                        <div class="help-block with-errors"></div>
+                     </div>
+                  </div>
+                    <div class="col-sm-6 col-lg-6">
+                        <div class="form-group">
+                            <label>Phone</label>
+                            <input type="text" name="mobile_number" required data-error="Please enter your number" class="form-control">
+                            <div class="help-block with-errors"></div>
+                        </div>
+                    </div>
+                    <div class="col-sm-12 col-lg-12">
+                        <div class="form-group">
+                            <label>Card Details</label>
+                            <div id="card-element"></div>
+                        </div>
+                    </div>
+                    <div class="col-md-12 col-lg-12">
+                        <button type="submit" class="cmn-btn btn">
+                        Make Payment
+                        </button>
+                        <div id="msgSubmit" class="h3 text-center hidden"></div>
+                        <div class="clearfix"></div>
+                    </div>
+               </div>
+            </form>
+         </div>
+      </div>
+   </div>
+</div>
+<script defer type="text/javascript" src="https://js.stripe.com/v3/"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+        
+        var stripe = Stripe('pk_test_51Iap3zAwMnghkPpnpgarK8DDqLRkqw2czxkJvamqIZv1fCrTg5cBmJm9Rs28k0VzheJhfyR9rCUHEwK3FivOScZB00uvqK33U7');
+        
+        var elements = stripe.elements();
+        
+        var cardElement = elements.create('card', {
+            classes : {
+                base : 'form-control mb-3',
+                invalid: 'is-invalid',
+                complete: 'is-valid',
+            },
+            style: {
+                base: {
+                    fontSize: '20px',
+                }
+            },
+            iconStyle: 'solid'
+        });
+
+        cardElement.mount('#card-element');
+
+     
+        cardElement.on('change', function (event) {
+            if (event.complete) {
+                
+                // enable payment button
+                stripe.createPaymentMethod({
+                    type: 'card',
+                    card: cardElement
+                }).then(function (result) {
+                    // Handle result.error or result.token
+                    if(result.error) {
+                        showToast(result.error.message, false);
+                        $('#js-payment-form button[type=submit]').attr('disabled', true);
+                    }else {
+                        // console.log(result.paymentMethod);
+                        $('#js-payment-form input[name=payment_method]').val(JSON.stringify(result.paymentMethod));
+                        $('#js-payment-form button[type=submit]').attr('disabled', false);
+                    }
+                });
+                // console.log(event);
+            } else if (event.error) {
+                // show validation to customer
+                showToast(event.error.message, false);
+                $('#js-payment-form button[type=submit]').attr('disabled', true);
+            }
+        });
+
+        $('#js-payment-form').validate({
+            ignore: [],
+            errorClass: 'error error-contact mb-1',
+            errorPlacement: function (error, element) {
+                element.closest('.form-group').append(error);
+            },
+                highlight: function (element, errorClass) {
+                $(element).addClass('is-invalid');
+            },
+            unhighlight: function (element, errorClass) {
+                $(element).removeClass('is-invalid');
+            },
+            rules: {
+                first_name: {
+                    required: true
+                },
+                last_name: {
+                    required: true
+                },
+                mobile: {
+                    required: true
+                },
+                service: {
+                    hasValidOption: true,
+                },
+                message: {
+                    required: true
+                }
+            },
+            submitHandler: function (form) {
+                const submitBtn = $(form).find('[type=submit]');
+                const originalText = submitBtn.text();
+                $.ajax({
+                    url: $(form).attr('action'),
+                    method: $(form).attr('method'),
+                    headers: {
+                        Accept: "application/json",
+                    },
+                    data: $(form).serialize(),
+                    dataType: "json",
+                    beforeSend: function () {
+                        submitBtn.html(`${originalText} <i class="bx bx-loader bx-spin"></i>`).attr('disabled', true);
+                    },
+                    success: function (response) {
+                        $(form)[0].reset();
+                        cardElement.clear();
+                        showToast(response.message);
+                    },
+                    complete: function () {
+                        submitBtn.html(originalText).attr('disabled', false);
+                    },
+                    error: function (jqXhr, textStatus, errorThrown) {
+                        showToast(errHandling(jqXhr, textStatus), false);
+                    }
+                });
+            }
+        });
+    });
+</script>

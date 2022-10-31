@@ -1,0 +1,43 @@
+{{#if packages.length}}
+<section class="pricing py-5">
+    <div class="container">
+        <div class="text-center mb-4">
+            <h3>Packages</h3>
+        </div>
+        <div class="row">
+            {{#each packages}}
+            <div class="col-lg-4">
+                <div class="card mb-5 mb-lg-0">
+                    <div class="card-body">
+                        <h5 class="card-title text-muted text-uppercase text-center">{{ this.name }}</h5>
+                        <h6 class="card-price text-center">${{ this.package_amount }}<span class="period">/month</span>
+                        </h6>
+                        <hr>
+                        <ul class="fa-ul">
+
+                            {{#if this.package_included_features }}
+                                {{#each (split ';' this.package_included_features)}}
+                                <li><span class="fa-li"><i class="fas fa-check"></i></span>{{ this }}</li>
+                                {{/each}}
+                            {{/if}}
+
+                            {{#if this.package_not_included_features }} 
+                                {{#each (split ';' this.package_not_included_features)}}
+                                <li class="text-muted"><span class="fa-li"><i class="fas fa-times"></i></span>{{ this }}
+                                </li>
+                                {{/each}}
+                            {{/if}}
+                        </ul>
+                        <a href="/package-details/{{ this.stripe_package_id }}" class="btn btn-block btn-primary text-uppercase 
+                        {{#ifCond this.plan_type '==' 'STARTER' }} btnwa1 {{/ifCond}} 
+                        {{#ifCond this.plan_type '==' 'INTERMEDIATE' }} btnwa2 {{/ifCond}} 
+                        {{#ifCond this.plan_type '==' 'STANDARD' }} btnwa3 {{/ifCond}}">
+                        Buy Now</a>
+                    </div>
+                </div>
+            </div>
+            {{/each}}
+        </div>
+    </div>
+</section>
+{{/if}}

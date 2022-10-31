@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>Live 24 App</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/css/meanmenu.css">
+    <link rel="stylesheet" href="/css/boxicons.min.css">
+    <link rel="stylesheet" href="/css/odometer.min.css">
+    <link rel="stylesheet" href="/css/magnific-popup.min.css">
+    <link rel="stylesheet" href="/css/owl.carousel.min.css">
+    <link rel="stylesheet" href="/css/owl.theme.default.min.css">
+    <link rel="stylesheet" href="/css/nice-select.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/responsive.css">
+    <link rel="stylesheet" href="/css/toastify.min.css">
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+
+<body>
+
+    {{> header }}
+
+    {{{body}}}
+
+    {{#ifCond showSubscriptionForm '!==' false }}
+    {{> subscription }}
+    {{/ifCond}}
+    
+    {{> footer }}
+
+    <script src="/js/jquery-3.5.1.slim.min.js"></script>
+    <script src="/js/jquery-3.5.1.min.js"></script>
+    <script src="/js/popper.min.js"></script>
+    <script src="/js/form-validator.min.js"></script>
+    <script src="/js/jquery.validate.js"></script>
+    <script src="/js/jquery.ajaxchimp.min.js"></script>
+    <script src="/js/jquery.meanmenu.js"></script>
+    <script src="/js/odometer.min.js"></script>
+    <script src="/js/jquery.appear.js"></script>
+    <script src="/js/jquery.magnific-popup.min.js"></script>
+    <script src="/js/owl.carousel.min.js"></script>
+    <script src="/js/jquery.nice-select.min.js"></script>
+    <script src="/js/thumb-slide.js"></script>
+    <script src="/js/custom.js"></script>
+    <script src="/js/bootstrap.min.js"></script>
+    <script src="/js/toastify-js.js"></script>
+    <script src="js/contact-form-script.js"></script>
+    <script>
+        window.addEventListener('DOMContentLoaded', (event) => {
+
+            $('li.col-lg-2').click(function () {
+                $('li.col-lg-2').removeClass("active");
+                $(this).addClass("active");
+            });
+
+            $(document).off('click.bs.tab.data-api', '[data-hover="tab"]');
+            $(document).on('mouseenter.bs.tab.data-api', '[data-toggle="tab"], [data-hover="tab"]', function () {
+                $(this).tab('show');
+            });
+
+            jQuery.validator.addMethod("hasValidOption", function (value, element) {
+                const options = ["PPC Advertising", "Google Ads PPC Management", "Social Media Marketing"];
+                return options.includes(value);
+            }, "Please select valid option.");
+
+            $('#js-contact-form').validate({
+                ignore: [],
+                errorClass: 'error mb-1',
+                errorPlacement: function (error, element) {
+                    if (element.attr("name") == 'service') {
+                        error.css({
+                            'margin-top': '3px'
+                        });
+                    }
+                    element.closest('.form-group').append(error);
+                },
+                rules: {
+                    full_name: {
+                        required: true
+                    },
+                    email: {
+                        required: true
+                    },
+                    mobile: {
+                        required: true
+                    },
+                    service: {
+                        hasValidOption: true,
+                    },
+                    message: {
+                        required: true
+                    }
+                },
+                submitHandler: function (form) {
+                    const submitBtn = $(form).find('[type=submit]');
+                    $.ajax({
+                        url: $(form).attr('action'),
+                        method: $(form).attr('method'),
+                        headers: {
+                            Accept: "application/json",
+                        },
+                        data: $(form).serialize(),
+                        dataType: "json",
+                        beforeSend: function () {
+                            submitBtn.attr('disabled', true);
+                        },
+                        success: function (response) {
+
+                            showToast('Mail has been sent Successfully.');
+                            $(form)[0].reset();
+
+                            let firstOption = $(form).find('#js-services .option:eq(0)').addClass('selected');
+                            $(form).find('#js-services .current').text($(firstOption).text());
+                            $(form).find('#js-services .option.selected').removeClass('selected');
+
+                            $(form).find('input[name=service]').val("");
+                        },
+                        complete: function () {
+                            submitBtn.attr('disabled', false);
+                        },
+                        error: function (jqXhr, textStatus, errorThrown) {
+                            showToast(errHandling(jqXhr, textStatus), false);
+                        }
+                    });
+                }
+            });
+
+            $(document).on('click', '.js-nice-option', function () {
+                $('#js-contact-form input[name=service]').val(
+                    $(this).data('value')
+                ).valid();
+            });
+
+            /** FREE CONSULTATION MODAL **/
+            var $modalOverlay = $('#modalOverlay');
+            var $modal = $('#modal');
+            var $modalClose = $('.modalClose');
+            var $modalOpen = $('.modalOpen');
+
+            $modalOpen.click(function () {
+                $modalOverlay.stop().fadeTo(500, 1);
+            });
+
+            $modalOverlay.click(function () {
+                $modalOverlay.stop().fadeTo(500, 0, function () {
+                    $(this).hide();
+                    $modalOverlay.find('form .help-block.with-errors,form #msgSubmit').html('');
+                    $modalOverlay.find('form')[0].reset();
+                });
+            });
+
+
+            $modal.click(function (e) {
+                e.stopPropagation();
+            });
+
+            $modalClose.click(function () {
+                $modalOverlay.click();
+            });
+            /** FREE CONSULTATION MODAL **/
+        });
+
+        function errHandling(jqXHR, exception) {
+            var msg = '';
+            if (jqXHR.status === 0) {
+                msg = 'Not connect.\n Verify Network.';
+            } else if (jqXHR.status == 404) {
+                msg = 'Requested page not found. [404]';
+            } else if (jqXHR.status == 500) {
+                if (jqXHR.responseJSON.file) {
+                    msg = `${jqXHR.responseJSON.message} in file ${jqXHR.responseJSON.file} at line ${jqXHR.responseJSON.line}`;
+                } else {
+                    msg = jqXHR.responseJSON.message;
+                }
+            } else if (jqXHR.status == 422 || jqXHR.status == 429) {
+                msg = JSON.parse(jqXHR.responseText).errors;
+                if (msg === undefined) {
+                    // user generated error
+                    msg = jqXHR.responseJSON.message;
+                } else {
+                    // laravel generated error
+                    msg = msg[Object.keys(msg)[0]][0];
+                }
+            } else if (exception === 'parsererror') {
+                msg = 'Requested JSON parse failed.';
+            } else if (exception === 'timeout') {
+                msg = 'Time out error.';
+            } else if (exception === 'abort') {
+                msg = 'Ajax request aborted.';
+            } else {
+                msg = jqXHR.responseJSON.message;
+            }
+            return msg;
+        }
+
+        function showToast(message, success = true) {
+            Toastify({
+                text: message,
+                duration: 3000,
+                newWindow: true,
+                close: true,
+                gravity: "bottom",
+                position: "center",
+                backgroundColor: success ? "#7fb600" : '#D20407',
+                stopOnFocus: true
+            })
+            .showToast();
+        }
+    </script>
+</body>
+
+</html>
